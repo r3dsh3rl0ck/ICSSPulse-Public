@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ICSSPulse - Modbus</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    body { background-color: #111827; font-family: 'Inter', sans-serif; }
+    .fira-code { font-family: 'Fira Code', monospace; }
+    input, select { background-color: #374151; border-color: #4b5563; }
+    input:focus, select:focus { --tw-ring-color: #4ade80; border-color: #4ade80; }
+    .scan-fields { display: none; }
+  </style>
+</head>
+<body class="text-gray-200">
+  <div class="container mx-auto p-4 md:p-8">
+    <div class="max-w-7xl mx-auto">
+      <div class="flex items-center justify-between mb-6">
+        <a href="/" class="text-teal-400 hover:text-teal-300 inline-block">&larr; Back to Menu</a>
+        <a href="/report" class="text-pink-400 hover:text-pink-300 inline-block">Report Center &rarr;</a>
+      </div>
+
+      <div class="text-center mb-8">
+        <h1 class="text-3xl font-bold text-white">Modbus Controller</h1>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- LEFT: Params -->
+        <div class="bg-gray-800 rounded-lg shadow-2xl p-6 border border-gray-700">
+          <h2 class="text-xl font-semibold text-white mb-4 border-b border-gray-700 pb-2">Parameters</h2>
+
+          <form method="post" id="modbus-form">
+            <input type="hidden" name="protocol" value="modbus">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label for="action" class="block mb-2 text-sm font-medium text-gray-300">Action</label>
+                <select name="action" id="action" class="w-full rounded-lg p-2.5 text-white focus:ring-2" required>
+                  <option value="read" {% if values.get('action', 'read') == 'read' %}selected{% endif %}>Read</option>
+                  <option value="write" {% if values.get('action') == 'write' %}selected{% endif %}>Write</option>
+                  <option value="enumerate" {% if values.get('action') == 'enumerate' %}selected{% endif %}>Enumerate</option>
+                  <option value="scan_units" {% if values.get('action') == 'scan_units' %}selected{% endif %}>Scan Unit IDs</option>
+                  <option value="scan_registers" {% if values.get('action') == 'scan_registers' %}selected{% endif %}>Scan Register Range</option>
+                </select>
+              </div>
+
+              <div id="function-field">
+                <label for="function" class="block mb-2 text-sm font-medium text-gray-300">Function</label>
+                <select name="function" id="function" class="w-full rounded-lg p-2.5 text-white focus:ring-2" data-selected="{{ values.get('function') }}" required></select>
+              </div>
+
+              <div class="md:col-span-2">
+                <label for="target" class="block mb-2 text-sm font-medium text-gray-300">Target IP/Hostname</label>
+                <input type="text" name="target" id="target" class="w-full rounded-lg p-2.5 text-white focus:ring-2" required placeholder="e.g., 192.168.1.123" value="{{ values.get('target', '') }}">
+              </div>
+
+              <div>
+                <label for="port" class="block mb-2 text-sm font-medium text-gray-300">Port</label>
+                <input type="number" name="port" id="port" class="w-full rounded-lg p-2.5 text-white focus:ring-2" value="{{ values.get('port', '502') }}" required>
+              </div>
+
+              <div id="unit-id-field">
+                <label for="unit_id" class="block mb-2 text-sm font-medium text-gray-300">Unit ID</label>
+                <input type="number" name="unit_id" id="unit_id" class="w-full rounded-lg p-2.5 text-white focus:ring-2" value="{{ values.get('unit_id', '1') }}" required>
+              </div>
+
+              <!-- Unit ID Scan Fields -->
+              <div id="unit-scan-start" class="scan-fields">
+                <label for="unit_start" class="block mb-2 text-sm font-medium text-gray-300">Start Unit ID</label>
+                <input type="number" name="unit_start" id="unit_start" class="w-full rounded-lg p-2.5 text-white focus:ring-2" value="{{ values.get('unit_start', '1') }}" min="0" max="247">
+              </div>
+              <div id="unit-scan-end" class="scan-fields">
+                <label for="unit_end" class="block mb-2 text-sm font-medium text-gray-300">End Unit ID</label>
+                <input type="number" name="unit_end" id="unit_end" class="w-full rounded-lg p-2.5 text-white focus:ring-2" value="{{ values.get('unit_end', '10') }}" min="0" max="247">
+              </div>
+
+              <!-- Standard Fields -->
+              <div id="address-field">
+                <label for="address" class="block mb-2 text-sm font-medium text-gray-300">Address</label>
+                <input type="number" name="address" id="address" class="w-full rounded-lg p-2.5 text-white focus:ring-2" placeholder="e.g., 40001" value="{{ values.get('address', '') }}">
+              </div>
+
+              <div id="value-field">
+                <label for="value" class="block mb-2 text-sm font-medium text-gray-300">Value (for write)</label>
+                <input type="number" name="value" id="value" class="w-full rounded-lg p-2.5 text-white focus:ring-2" placeholder="e.g., 1" value="{{ values.get('value', '') }}">
+              </div>
+
+              <div id="count-field">
+                <label for="count" class="block mb-2 text-sm font-medium text-gray-300">Count</label>
+                <input type="number" name="count" id="count" class="w-full rounded-lg p-2.5 text-white focus:ring-2" value="{{ values.get('count', '1') }}">
+              </div>
+
+              <div>
+                <label for="timeout" class="block mb-2 text-sm font-medium text-gray-300">Timeout (s)</label>
+                <input type="number" name="timeout" id="timeout" class="w-full rounded-lg p-2.5 text-white focus:ring-2" value="{{ values.get('timeout', '3') }}">
+              </div>
+            </div>
+
+            <!-- Buttons -->
+            <div class="flex flex-col sm:flex-row gap-3 mt-6">
+              <button type="submit" class="bg-teal-600 hover:bg-teal-500 text-white font-bold py-3 px-6 rounded-lg transition duration-300">
+                Execute
+              </button>
+              <button type="button" id="add-btn" class="bg-pink-600 hover:bg-pink-500 text-white font-bold py-3 px-6 rounded-lg transition duration-300 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                Add to report
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- RIGHT: Output -->
+        <div class="bg-gray-800 rounded-lg shadow-2xl p-6 border border-gray-700">
+          <h2 class="text-xl font-semibold text-white mb-4 border-b border-gray-700 pb-2">Output</h2>
+          <div class="bg-black rounded-lg p-4 h-96 overflow-y-auto">
+            <pre id="modbus-output" class="text-sm whitespace-pre-wrap fira-code text-gray-300">{{ output | safe }}</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const actionSelect   = document.getElementById('action');
+      const functionSelect = document.getElementById('function');
+      const allOptions     = ['coils', 'discrete_inputs', 'holding_registers', 'input_registers'];
+      const writeOptions   = ['coils', 'holding_registers'];
+
+      // Field elements
+      const functionField  = document.getElementById('function-field');
+      const unitIdField    = document.getElementById('unit-id-field');
+      const addressField   = document.getElementById('address-field');
+      const valueField     = document.getElementById('value-field');
+      const countFieldWrap = document.getElementById('count-field');
+      const unitScanStart  = document.getElementById('unit-scan-start');
+      const unitScanEnd    = document.getElementById('unit-scan-end');
+
+      function updateFunctions() {
+        const selectedAction = actionSelect.value;
+        const options = (selectedAction === 'write') ? writeOptions : allOptions;
+
+        const previouslySelected = functionSelect.dataset.selected;
+        functionSelect.innerHTML = '';
+        options.forEach(opt => {
+          const option = document.createElement('option');
+          option.value = opt;
+          option.textContent = opt.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+          functionSelect.appendChild(option);
+        });
+        if (previouslySelected && options.includes(previouslySelected)) {
+          functionSelect.value = previouslySelected;
+        }
+      }
+
+      function updateFieldVisibility() {
+        const selectedAction = actionSelect.value;
+
+        // Hide scan-only fields initially
+        unitScanStart.style.display = 'none';
+        unitScanEnd.style.display   = 'none';
+
+        if (selectedAction === 'scan_units') {
+          // Show unit scan range; hide standard fields that don't apply
+          unitScanStart.style.display = 'block';
+          unitScanEnd.style.display   = 'block';
+          functionField.style.display = 'none';
+          unitIdField.style.display   = 'none';
+          addressField.style.display  = 'none';
+          valueField.style.display    = 'none';
+          countFieldWrap.style.display= 'none';
+
+          functionSelect.removeAttribute('required');
+          document.getElementById('unit_id').removeAttribute('required');
+          document.getElementById('address').removeAttribute('required');
+
+        } else if (selectedAction === 'scan_registers') {
+          // Function + unit_id + address + count (range size) are needed
+          functionField.style.display = 'block';
+          unitIdField.style.display   = 'block';
+          addressField.style.display  = 'block';
+          valueField.style.display    = 'none';
+          countFieldWrap.style.display= 'block';
+          countFieldWrap.querySelector('label').textContent = 'Range Size';
+
+          functionSelect.setAttribute('required', 'required');
+          document.getElementById('unit_id').setAttribute('required', 'required');
+          document.getElementById('address').setAttribute('required', 'required');
+
+        } else {
+          // Standard read/write/enumerate
+          functionField.style.display = 'block';
+          unitIdField.style.display   = 'block';
+          addressField.style.display  = 'block';
+          countFieldWrap.style.display= 'block';
+          countFieldWrap.querySelector('label').textContent = 'Count';
+
+          functionSelect.setAttribute('required', 'required');
+          document.getElementById('unit_id').setAttribute('required', 'required');
+          document.getElementById('address').setAttribute('required', 'required');
+
+          // Value only for write
+          valueField.style.display    = (selectedAction === 'write') ? 'block' : 'none';
+        }
+      }
+
+      actionSelect.addEventListener('change', () => {
+        updateFunctions();
+        updateFieldVisibility();
+      });
+
+      updateFunctions();
+      updateFieldVisibility();
+
+      // ---- Add to report button wiring ----
+      const addBtn = document.getElementById('add-btn');
+      const outEl  = document.getElementById('modbus-output');
+
+      // Enable only if there's output on page load (after an Execute)
+      const enableIfOutput = () => {
+        const hasOutput = (outEl && outEl.textContent.trim().length > 0);
+        addBtn.disabled = !hasOutput;
+      };
+      enableIfOutput();
+
+      addBtn.addEventListener('click', async () => {
+        // Gather current form values + visible output
+        const payload = {
+          inputs: {
+            protocol: 'modbus',
+            action: document.getElementById('action').value,
+            function: document.getElementById('function').value,
+            target: document.getElementById('target').value.trim(),
+            port: document.getElementById('port').value,
+            unit_id: document.getElementById('unit_id').value,
+            address: document.getElementById('address').value,
+            count: document.getElementById('count').value,
+            value: document.getElementById('value').value,
+            timeout: document.getElementById('timeout').value,
+            // scan-only inputs
+            unit_start: document.getElementById('unit_start') ? document.getElementById('unit_start').value : null,
+            unit_end: document.getElementById('unit_end') ? document.getElementById('unit_end').value : null
+          },
+          output: (outEl ? outEl.textContent : '')
+        };
+
+        if (!payload.output.trim()) {
+          alert('Run a Modbus action first so there is output to add.');
+          return;
+        }
+
+        try {
+          addBtn.disabled = true;
+          const res = await fetch('/add-modbus-to-report', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            alert(data.error || 'Failed to add to report');
+          } else {
+            const prev = addBtn.textContent;
+            addBtn.textContent = 'Added!';
+            setTimeout(() => addBtn.textContent = prev, 1200);
+          }
+        } catch (e) {
+          alert(`Client-Side Error: ${e.message}`);
+        } finally {
+          addBtn.disabled = false;
+        }
+      });
+    });
+  </script>
+</body>
+</html>

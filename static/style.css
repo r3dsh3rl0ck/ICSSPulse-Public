@@ -1,0 +1,103 @@
+/* static/style.css */
+
+/* Use a modern, techy font */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@300;400&display=swap');
+
+:root {
+    --primary-glow: #00ffcc;
+    --secondary-glow: #00aaff;
+    --background-dark: #0d1117;
+    --card-background: #161b22;
+    --card-border: #30363d;
+    --text-color: #c9d1d9;
+    --text-muted-color: #8b949e;
+}
+
+body {
+    background-color: var(--background-dark);
+    color: var(--text-color);
+    font-family: 'Roboto', sans-serif;
+}
+
+.card {
+    background-color: var(--card-background);
+    border: 1px solid var(--card-border);
+    transition: box-shadow 0.3s ease-in-out, transform 0.3s ease;
+}
+
+.card:hover {
+    box-shadow: 0 0 15px rgba(0, 255, 204, 0.2);
+    transform: translateY(-5px);
+}
+
+.card-header {
+    background-color: rgba(30, 36, 45, 0.8);
+    border-bottom: 1px solid var(--card-border);
+    font-family: 'Orbitron', sans-serif;
+}
+
+/* Specific button colors */
+.btn-success {
+    background-color: #238636;
+    border-color: #2ea043;
+}
+.btn-primary {
+    background-color: #1f6feb;
+    border-color: #2f81f7;
+}
+
+.explosive-text {
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 700;
+    font-size: 3.5rem;
+    color: var(--primary-glow);
+    text-shadow:
+        0 0 5px var(--primary-glow),
+        0 0 10px var(--primary-glow),
+        0 0 20px var(--secondary-glow),
+        0 0 40px var(--secondary-glow);
+    animation: pulse 2s infinite alternate;
+}
+
+.hover-container {
+    transition: transform 0.3s ease;
+}
+
+.hover-container:hover {
+    transform: scale(1.02);
+}
+
+@keyframes pulse {
+    from {
+        text-shadow:
+            0 0 5px var(--primary-glow),
+            0 0 10px var(--primary-glow),
+            0 0 20px var(--secondary-glow),
+            0 0 40px var(--secondary-glow);
+    }
+    to {
+        text-shadow:
+            0 0 10px var(--primary-glow),
+            0 0 20px var(--primary-glow),
+            0 0 40px var(--secondary-glow),
+            0 0 80px var(--secondary-glow);
+    }
+}
+
+/* Styles for output boxes */
+.output-card {
+    min-height: 400px;
+}
+
+.output-pre {
+    background-color: #010409;
+    color: #f0f6fc;
+    border: 1px solid var(--card-border);
+    border-radius: 6px;
+    padding: 16px;
+    height: 100%;
+    min-height: 350px;
+    white-space: pre-wrap;
+    word-break: break-all;
+    font-family: 'Courier New', Courier, monospace;
+}

@@ -1,0 +1,4 @@
+pymodbus==3.11.2
+opcua==0.98.13
+flask==3.1.2
+ansi2html==1.9.2

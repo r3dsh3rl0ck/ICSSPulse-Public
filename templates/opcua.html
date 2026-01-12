@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ICSSPulse - OPC UA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body { background-color: #111827; font-family: 'Inter', sans-serif; }
+        .fira-code { font-family: 'Fira Code', monospace; }
+        input, select {
+            background-color: #374151;
+            border-color: #4b5563;
+        }
+        input:focus, select:focus {
+            --tw-ring-color: #fbbf24; /* amber-400 */
+            border-color: #fbbf24;
+        }
+        label small { color: #9CA3AF; } /* gray-400 */
+    </style>
+</head>
+<body class="text-gray-200">
+    <div class="container mx-auto p-4 md:p-8">
+        <div class="max-w-7xl mx-auto">
+            <a href="/" class="text-yellow-400 hover:text-yellow-300 mb-6 inline-block">&larr; Back to Menu</a>
+            <div class="text-center mb-8">
+                 <h1 class="text-3xl font-bold text-white">OPC UA Controller</h1>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="bg-gray-800 rounded-lg shadow-2xl p-6 border border-gray-700">
+                    <h2 class="text-xl font-semibold text-white mb-4 border-b border-gray-700 pb-2">Parameters</h2>
+                    <form method="post">
+                        <input type="hidden" name="protocol" value="opcua">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="action" class="block mb-2 text-sm font-medium text-gray-300">Action</label>
+                                <select name="action" id="action" class="w-full rounded-lg p-2.5 text-white focus:ring-2" required>
+                                    <option value="discover" {% if values.get('action', 'discover') == 'discover' %}selected{% endif %}>Discover Endpoints</option>
+                                    <option value="browse" {% if values.get('action') == 'browse' %}selected{% endif %}>Browse (tree)</option>
+                                    <option value="enumerate" {% if values.get('action') == 'enumerate' %}selected{% endif %}>Enumerate Variables</option>
+                                    <option value="read" {% if values.get('action') == 'read' %}selected{% endif %}>Read</option>
+                                    <option value="write" {% if values.get('action') == 'write' %}selected{% endif %}>Write</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="target" class="block mb-2 text-sm font-medium text-gray-300">Target IP/Hostname</label>
+                                <input type="text" name="target" id="target" class="w-full rounded-lg p-2.5 text-white focus:ring-2" required placeholder="e.g., 127.0.0.1" value="{{ values.get('target', '') }}">
+                            </div>
+                            <div>
+                                <label for="port" class="block mb-2 text-sm font-medium text-gray-300">Port</label>
+                                <input type="number" name="port" id="port" class="w-full rounded-lg p-2.5 text-white focus:ring-2" value="{{ values.get('port', '4840') }}" required>
+                            </div>
+                            <div>
+                                <label for="endpoint_path" class="block mb-2 text-sm font-medium text-gray-300">Endpoint Path <small>(blank or e.g., freeopcua/server/)</small></label>
+                                <input type="text" name="endpoint_path" id="endpoint_path" class="w-full rounded-lg p-2.5 text-white focus:ring-2" value="{{ values.get('endpoint_path', 'freeopcua/server/') }}">
+                            </div>
+                            <div>
+                                <label for="username" class="block mb-2 text-sm font-medium text-gray-300">Username (optional)</label>
+                                <input type="text" name="username" id="username" class="w-full rounded-lg p-2.5 text-white focus:ring-2"
+                                    value="{{ values.get('username', '') }}" placeholder="e.g., admin">
+                            </div>
+                            <div>
+                                <label for="password" class="block mb-2 text-sm font-medium text-gray-300">Password (optional)</label>
+                                <input type="password" name="password" id="password" class="w-full rounded-lg p-2.5 text-white focus:ring-2"
+                                    value="{{ values.get('password', '') }}">
+                            </div>
+
+
+                            <!-- Read/Write specifics -->
+                            <div class="md:col-span-2">
+                                <label for="nodeid" class="block mb-2 text-sm font-medium text-gray-300">NodeId <small>(for read/write, e.g., ns=2;i=10)</small></label>
+                                <input type="text" name="nodeid" id="nodeid" class="w-full rounded-lg p-2.5 text-white focus:ring-2" placeholder="ns=2;i=10" value="{{ values.get('nodeid', '') }}">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label for="value" class="block mb-2 text-sm font-medium text-gray-300">Value (for write)</label>
+                                <input type="text" name="value" id="value" class="w-full rounded-lg p-2.5 text-white focus:ring-2" placeholder="true / 42 / 3.14 / hello" value="{{ values.get('value', '') }}">
+                            </div>
+
+                            <!-- Browse / Enumerate knobs -->
+                            <div>
+                                <label for="max_depth" class="block mb-2 text-sm font-medium text-gray-300">Max Depth (browse)</label>
+                                <input type="number" name="max_depth" id="max_depth" class="w-full rounded-lg p-2.5 text-white focus:ring-2" value="{{ values.get('max_depth', '3') }}">
+                            </div>
+                            <div>
+                                <label for="max_nodes" class="block mb-2 text-sm font-medium text-gray-300">Max Nodes (browse/enumerate)</label>
+                                <input type="number" name="max_nodes" id="max_nodes" class="w-full rounded-lg p-2.5 text-white focus:ring-2" value="{{ values.get('max_nodes', '200') }}">
+                            </div>
+                            <div>
+                                <label for="namespace" class="block mb-2 text-sm font-medium text-gray-300">Namespace Filter (enumerate)</label>
+                                <input type="number" name="namespace" id="namespace" class="w-full rounded-lg p-2.5 text-white focus:ring-2" placeholder="e.g., 2" value="{{ values.get('namespace', '') }}">
+                            </div>
+
+                            <!-- Common -->
+                            <div>
+                                <label for="timeout" class="block mb-2 text-sm font-medium text-gray-300">Timeout (s)</label>
+                                <input type="number" name="timeout" id="timeout" class="w-full rounded-lg p-2.5 text-white focus:ring-2" value="{{ values.get('timeout', '3') }}">
+                            </div>
+                            <div>
+                                <label for="retries" class="block mb-2 text-sm font-medium text-gray-300">Retries</label>
+                                <input type="number" name="retries" id="retries" class="w-full rounded-lg p-2.5 text-white focus:ring-2" value="{{ values.get('retries', '3') }}">
+                            </div>
+                        </div>
+                        <button type="submit" class="mt-6 w-full bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-3 px-6 rounded-lg transition duration-300">Execute</button>
+                        <p class="text-xs text-gray-400 mt-3">
+                            Note: This client uses Anonymous authentication and no channel security by default. Make sure your test server allows it.
+                        </p>
+                    </form>
+                </div>
+
+                <div class="bg-gray-800 rounded-lg shadow-2xl p-6 border border-gray-700">
+                    <h2 class="text-xl font-semibold text-white mb-4 border-b border-gray-700 pb-2">Output</h2>
+                    <div class="bg-black rounded-lg p-4 h-96 overflow-y-auto">
+                        <pre class="text-sm whitespace-pre-wrap fira-code text-gray-300">{{ output | safe }}</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

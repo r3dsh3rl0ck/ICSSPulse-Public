@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ICSSPulse - RustScan</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body { background-color: #111827; font-family: 'Inter', sans-serif; }
+        .fira-code { font-family: 'Fira Code', monospace; }
+        #loader { border-top-color: #6366f1; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="text-gray-200">
+    <div class="container mx-auto p-4 md:p-8">
+        <div class="max-w-4xl mx-auto">
+            <div class="flex items-center justify-between mb-6">
+                <a href="/" class="text-indigo-400 hover:text-indigo-300 inline-block">&larr; Back to Menu</a>
+                <a href="/report" class="text-pink-400 hover:text-pink-300 inline-block">Report Center &rarr;</a>
+            </div>
+
+            <div class="bg-gray-800 rounded-lg shadow-2xl p-6 md:p-8 border border-gray-700">
+                <h1 class="text-3xl font-bold text-white mb-2">RustScan Runner</h1>
+                <p class="text-gray-400 mb-6">Enter arguments like <code class="bg-gray-700 text-yellow-300 p-1 rounded">-a 127.0.0.1 -- -A -sV</code></p>
+
+                <div class="flex flex-col sm:flex-row gap-4 mb-2">
+                    <input type="text" id="rustscan-args" class="flex-grow bg-gray-700 text-white border border-gray-600 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="<rustscan arguments>">
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-3 mb-6">
+                    <button id="run-button" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-6 rounded-lg transition duration-300 flex items-center justify-center shrink-0">
+                        <span id="button-content">Run Scan</span>
+                    </button>
+                    <button id="add-button" class="bg-pink-600 hover:bg-pink-500 text-white font-bold py-3 px-6 rounded-lg transition duration-300 flex items-center justify-center shrink-0" disabled>
+                        Add to report
+                    </button>
+
+                </div>
+
+                <h2 class="text-xl font-semibold text-white mb-4 border-b border-gray-700 pb-2">Output</h2>
+                <div id="output-container" class="bg-black rounded-lg p-4 h-96 overflow-y-auto">
+                    <div id="loader-container" class="hidden items-center justify-center h-full">
+                        <div id="loader" class="w-12 h-12 border-4 border-gray-600 rounded-full"></div>
+                    </div>
+                    <pre id="output" class="text-sm whitespace-pre-wrap fira-code text-gray-300"></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        const runButton = document.getElementById('run-button');
+        const addButton = document.getElementById('add-button');   
+        const buttonContent = document.getElementById('button-content');
+        const argsInput = document.getElementById('rustscan-args');
+        const outputPre = document.getElementById('output');
+        const loaderContainer = document.getElementById('loader-container');
+
+        // Cache from the most recent run
+        let lastArgs = '';
+        let lastRawOutput = '';
+
+        async function runScan() {
+            const args = argsInput.value.trim();
+            outputPre.innerHTML = '';
+            loaderContainer.classList.remove('hidden');
+            loaderContainer.classList.add('flex');
+            runButton.disabled = true;
+            addButton.disabled = true;  
+            runButton.classList.add('opacity-50', 'cursor-not-allowed');
+            addButton.classList.add('opacity-50', 'cursor-not-allowed');
+            buttonContent.textContent = 'Running...';
+
+            try {
+                const response = await fetch('/run-scan', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ args }),
+                });
+                const result = await response.json();
+
+                if (response.ok) {
+                    outputPre.innerHTML = result.output;      // pretty HTML from server
+                    lastArgs = args;                           // cache args
+                    lastRawOutput = result.raw_output || '';   // cache raw output
+                    addButton.disabled = !lastRawOutput;       // enable 'Add' only if we have something to add
+                } else {
+                    outputPre.textContent = `Error: ${result.error}`;
+                    addButton.disabled = true;
+                }
+            } catch (error) {
+                outputPre.textContent = `Client-Side Error: ${error.message}`;
+                addButton.disabled = true;
+            } finally {
+                loaderContainer.classList.add('hidden');
+                loaderContainer.classList.remove('flex');
+                runButton.disabled = false;
+                runButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                addButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                buttonContent.textContent = 'Run Scan';
+            }
+        }
+
+        async function addToReport() {
+            if (!lastRawOutput || !lastArgs) {
+                alert('Run a scan first so there is something to add.');
+                return;
+            }
+            addButton.disabled = true;
+            addButton.classList.add('opacity-50', 'cursor-not-allowed');
+            try {
+                const res = await fetch('/add-scan-to-report', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ args: lastArgs, raw_output: lastRawOutput })
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    alert(data.error || 'Failed to add to report');
+                } else {
+                    // quick visual confirmation
+                    const oldText = addButton.textContent;
+                    addButton.textContent = 'Added!';
+                    setTimeout(() => { addButton.textContent = oldText; }, 1200);
+                }
+            } catch (e) {
+                alert(`Client-Side Error: ${e.message}`);
+            } finally {
+                addButton.disabled = false;
+                addButton.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        }
+
+        runButton.addEventListener('click', runScan);
+        addButton.addEventListener('click', addToReport);
+    </script>
+
+</body>
+</html>
