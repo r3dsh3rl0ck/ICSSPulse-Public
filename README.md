@@ -67,7 +67,7 @@ It is designed for safe and reproducible experimentation in labs and cyber-range
 ## Installation
 
 ```bash
-git clone <YOUR_REPO_URL>
+git clone <REPO_URL>
 cd ICSSpulse
 pip install -r requirements.txt
 python3 app.py
