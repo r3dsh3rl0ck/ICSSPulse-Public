@@ -321,14 +321,6 @@ def run_scan():
         converter = Ansi2HTMLConverter()
         html_output = converter.convert(raw_output)
 
-        add_flag = bool(data.get('add_to_report', False)) 
-        if add_flag:
-            add_to_report(
-                "scan",
-                inputs={"command": " ".join(full_command), "args": user_args_list},
-                output=raw_output
-            )
-
         return jsonify({'output': html_output, 'raw_output': raw_output})
 
 
@@ -358,70 +350,35 @@ def generate_report_route():
         return jsonify({"error": "Report inbox is empty."}), 400
     return jsonify({"report_markdown": md, "items_used": used})
 
-@app.route('/add-scan-to-report', methods=['POST'])
-def add_scan_to_report():
-    try:
-        data = request.get_json() or {}
-        user_args_str = (data.get('args') or '').strip()
-        raw_output = data.get('raw_output') or ''
-        if not user_args_str or not raw_output:
-            return jsonify({"error": "Missing args or raw_output from last run."}), 400
-
-        user_args_list = shlex.split(user_args_str)
-        base_command = ['docker', 'run', '-t', '--rm', 'rustscan/rustscan:2.1.1']
-        full_command = base_command + user_args_list
-
-        add_to_report(
-            "scan",
-            inputs={"command": " ".join(full_command), "args": user_args_list},
-            output=raw_output
-        )
-        return jsonify({"status": "ok"})
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-
-
-@app.route('/add-modbus-to-report', methods=['POST'])
-def add_modbus_to_report():
+@app.route('/add-to-report', methods=['POST'])
+def add_to_report_route():
     """
+    Universal report ingestion for every controller (current and future).
+
     POST JSON:
       {
-        "inputs": {
-          "protocol": "modbus",
-          "action": "...",
-          "target": "...",
-          "port": 502,
-          "unit_id": 1,
-          "function": "holding_registers",
-          "address": 40001,
-          "count": 1,
-          "value": null,
-          "timeout": 3,
-          "retries": 3
-        },
-        "output": "<raw textual output from the last run>"
+        "category": "<controller-name>",   e.g. "modbus", "scan", "opcua", ...
+        "inputs":   { ...controller-specific inputs... },
+        "output":   "<raw or text output from the last run>"
       }
+
+    The report engine normalizes/sanitizes these records generically, so no
+    per-controller backend route or custom parsing is needed here.
     """
     try:
-        data = request.get_json() or {}
+        data = request.get_json(silent=True) or {}
+        category = (data.get("category") or "").strip()
         inputs = data.get("inputs") or {}
         output = data.get("output") or ""
 
-        if not output.strip():
+        if not category:
+            return jsonify({"error": "Missing 'category' (controller name)."}), 400
+        if not isinstance(inputs, dict):
+            return jsonify({"error": "'inputs' must be an object."}), 400
+        if not str(output).strip():
             return jsonify({"error": "No output provided to add."}), 400
-        if inputs.get("protocol") != "modbus":
-            return jsonify({"error": "Invalid or missing Modbus inputs."}), 400
 
-        # normalize numeric fields
-        for k in ("port", "unit_id", "address", "count", "value", "timeout", "retries"):
-            if k in inputs and inputs[k] not in (None, ""):
-                try:
-                    inputs[k] = int(inputs[k])
-                except Exception:
-                    pass
-
-        add_to_report("modbus", inputs, output)
+        add_to_report(category, inputs, output)
         return jsonify({"status": "ok"})
     except Exception as e:
         return jsonify({"error": str(e)}), 500

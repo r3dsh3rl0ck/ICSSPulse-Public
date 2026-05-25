@@ -133,20 +133,37 @@
         audience: audienceSel.value,
         title: titleInput.value || 'ICS/OT Security Test Report'
       };
-      const res = await fetch('/generate-report', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        alert(data.error || 'Failed to generate report');
-        return;
+
+      // Lock the button + show a loading state while the LLM works (can take a while).
+      const prevLabel = generateBtn.textContent;
+      generateBtn.disabled = true;
+      generateBtn.classList.add('opacity-50', 'cursor-not-allowed');
+      generateBtn.textContent = 'Generating…';
+      downloadBtn.disabled = true;
+
+      try {
+        const res = await fetch('/generate-report', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          alert(data.error || 'Failed to generate report');
+          return;
+        }
+        reportMd.value = data.report_markdown || '';
+        // Preview render
+        reportPreview.innerHTML = marked.parse(reportMd.value || '');
+        downloadBtn.disabled = !reportMd.value.length;
+      } catch (e) {
+        alert(`Error: ${e.message}`);
+      } finally {
+        // Always restore the button, success or failure.
+        generateBtn.disabled = false;
+        generateBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        generateBtn.textContent = prevLabel;
       }
-      reportMd.value = data.report_markdown || '';
-      // Preview render
-      reportPreview.innerHTML = marked.parse(reportMd.value || '');
-      downloadBtn.disabled = !reportMd.value.length;
     }
 
     function downloadMarkdown() {

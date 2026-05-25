@@ -288,6 +288,7 @@
 
     addBtn.addEventListener('click', async () => {
       const payload = {
+        category: 'modbus',
         inputs: {
           protocol:   'modbus',
           action:     document.getElementById('action').value,
@@ -312,7 +313,7 @@
 
       try {
         addBtn.disabled = true;
-        const res  = await fetch('/add-modbus-to-report', {
+        const res  = await fetch('/add-to-report', {
           method:  'POST',
           headers: { 'Content-Type': 'application/json' },
           body:    JSON.stringify(payload)

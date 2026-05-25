@@ -111,10 +111,15 @@
             addButton.disabled = true;
             addButton.classList.add('opacity-50', 'cursor-not-allowed');
             try {
-                const res = await fetch('/add-scan-to-report', {
+                const payload = {
+                    category: 'scan',
+                    inputs: { args: lastArgs },
+                    output: lastRawOutput
+                };
+                const res = await fetch('/add-to-report', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ args: lastArgs, raw_output: lastRawOutput })
+                    body: JSON.stringify(payload)
                 });
                 const data = await res.json();
                 if (!res.ok) {
