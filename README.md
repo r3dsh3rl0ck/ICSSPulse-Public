@@ -86,7 +86,7 @@ Then in the **ICSSPulse GUI**:
 
 ## 📄 Research Paper
 
-📎 **Preprint:** [arXiv:2602.20663](https://arxiv.org/abs/2602.20663)
+📎 **Paper:** [ICSSPulse: A Modular LLM-Assisted Platform for Industrial Control System Penetration Testing](https://link.springer.com/chapter/10.1007/978-3-032-27993-4_17)
 
 ---
 
